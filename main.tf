@@ -93,7 +93,7 @@ resource "google_compute_firewall" "demo-ssh-ipv4" {
 resource "google_compute_firewall" "demo-http-ipv4" {
 
 
-  name    = "staging-demo-ssh-ipv4"
+  name    = "staging-demo-http-ipv4"
   network = "default"
 
   allow {
