@@ -13,3 +13,7 @@ sudo echo artifact-bucket-x1n1l5ev > testing.txt
 sudo gcsfuse -o allow_other -file-mode=777 -dir-mode=777 artifact-bucket-x1n1l5ev gcs-bucket > out.txt
 sleep 10
 sudo touch gcs-bucket/cloudroot7.txt
+echo ${bucket_name} > test
+sudo apt install net-tools -y 
+sudo apt install nginx -y
+sudo systemctl restart nginx

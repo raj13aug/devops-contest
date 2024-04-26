@@ -123,6 +123,32 @@ resource "google_compute_firewall" "demo-ssh-ipv4" {
 }
 
 
+resource "google_compute_firewall" "demo-http-ipv4" {
+
+
+  name    = "staging-demo-http-ipv4"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = [80]
+  }
+
+  allow {
+    protocol = "udp"
+    ports    = [80]
+  }
+
+  allow {
+    protocol = "sctp"
+    ports    = [80]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = google_compute_instance.demo.tags
+}
+
+
 resource "local_file" "local_ssh_key" {
   content  = tls_private_key.ssh.private_key_pem
   filename = "${path.root}/ssh-keys/ssh_key"
@@ -133,11 +159,11 @@ resource "local_file" "local_ssh_key_pub" {
   filename = "${path.root}/ssh-keys/ssh_key.pub"
 }
 
-output "instance_ip" {
-  value = google_compute_instance.demo.network_interface.0.access_config.0.nat_ip
-}
+# output "instance_ip" {
+#   value = google_compute_instance.demo.network_interface.0.access_config.0.nat_ip
+# }
 
-output "instance_ssh_key" {
-  value      = "${abspath(path.root)}/ssh_key"
-  depends_on = [tls_private_key.ssh]
-}
+# output "instance_ssh_key" {
+#   value      = "${abspath(path.root)}/ssh_key"
+#   depends_on = [tls_private_key.ssh]
+# }
