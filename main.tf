@@ -17,11 +17,38 @@ resource "google_compute_address" "external-static-ip" {
   region = var.region
 }
 
+# resource "random_string" "unique_suffix1" {
+#   length  = 8
+#   upper   = false
+#   special = false
+# }
+
+resource "google_storage_bucket" "artifact_bucket" {
+  name                        = "artifact-bucket-x1n1l5ev"
+  location                    = var.region
+  force_destroy               = true
+  uniform_bucket_level_access = true
+}
+
 data "template_file" "client_userdata_script" {
-  template = file("${path.root}/shell_script.tpl")
+  template = file("${path.root}/start_script.tpl")
   vars = {
     bucket_name = "artifact-bucket-x1n1l5ev"
   }
+  depends_on = [google_storage_bucket.artifact_bucket]
+}
+
+resource "google_service_account" "default" {
+  project      = var.project_id
+  account_id   = "service-account-id"
+  display_name = "Service Account"
+}
+
+resource "google_storage_bucket_iam_member" "buckets" {
+  bucket     = google_storage_bucket.artifact_bucket.name
+  role       = "roles/storage.objectAdmin"
+  member     = "serviceAccount:${google_service_account.default.email}"
+  depends_on = [google_service_account.default]
 }
 
 
@@ -53,15 +80,20 @@ resource "google_compute_instance" "demo" {
     }
   }
 
+  service_account {
+    email  = google_service_account.default.email
+    scopes = ["storage-rw", "compute-rw"]
+  }
 
   metadata = {
     sshKeys = "ubuntu:${tls_private_key.ssh.public_key_openssh}"
   }
 
   # We can install any tools we need for the demo in the startup script
-  metadata_startup_script = data.template_file.client_userdata_script.rendered
-  #resource_policies       = [google_compute_resource_policy.uptime_schedule.id]
-  depends_on = [time_sleep.wait_30_seconds]
+  metadata_startup_script = data.template_file.client_userdata_script.rendered #file("${path.root}/start_script.sh")
+
+  depends_on = [google_compute_address.external-static-ip, google_storage_bucket.artifact_bucket]
+
 }
 
 
@@ -90,30 +122,6 @@ resource "google_compute_firewall" "demo-ssh-ipv4" {
   target_tags   = google_compute_instance.demo.tags
 }
 
-resource "google_compute_firewall" "demo-http-ipv4" {
-
-
-  name    = "staging-demo-http-ipv4"
-  network = "default"
-
-  allow {
-    protocol = "tcp"
-    ports    = [80]
-  }
-
-  allow {
-    protocol = "udp"
-    ports    = [80]
-  }
-
-  allow {
-    protocol = "sctp"
-    ports    = [80]
-  }
-
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = google_compute_instance.demo.tags
-}
 
 resource "local_file" "local_ssh_key" {
   content  = tls_private_key.ssh.private_key_pem
@@ -123,4 +131,13 @@ resource "local_file" "local_ssh_key" {
 resource "local_file" "local_ssh_key_pub" {
   content  = tls_private_key.ssh.public_key_openssh
   filename = "${path.root}/ssh-keys/ssh_key.pub"
+}
+
+output "instance_ip" {
+  value = google_compute_instance.demo.network_interface.0.access_config.0.nat_ip
+}
+
+output "instance_ssh_key" {
+  value      = "${abspath(path.root)}/ssh_key"
+  depends_on = [tls_private_key.ssh]
 }

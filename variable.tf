@@ -20,14 +20,13 @@ variable "region" {
   default     = "us-central1"
 }
 
-
-
-variable "uptime_schedule" {
-  type        = map(string)
-  description = "Key/value pairs to define the uptime schedule: start and stop are cron expressions, time_zone is an IANA time zone name"
-  default = {
-    start     = "0 6 * * *"
-    stop      = "0 0 * * *"
-    time_zone = "Asia/Kolkata"
-  }
+variable "disk_type" {
+  type        = string
+  description = "The additional_disk_type of the VM."
+  default     = "pd-ssd"
+}
+variable "disk_size" {
+  type        = number
+  description = "The addtnl_disk_size of the VM."
+  default     = 10
 }
