@@ -14,6 +14,8 @@ sudo gcsfuse -o allow_other -file-mode=777 -dir-mode=777 artifact-bucket-x1n1l5e
 sleep 10
 sudo touch gcs-bucket/cloudroot7.txt
 echo ${bucket_name} > test
-sudo apt install net-tools -y 
+sudo apt install net-tools -y
+sudo apt install python3-pip -y
+sudo pip install requests ansicolors -y
 sudo apt install nginx -y
 sudo systemctl restart nginx
