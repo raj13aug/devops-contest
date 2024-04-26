@@ -22,7 +22,6 @@ data "template_file" "client_userdata_script" {
   vars = {
     bucket_name = "artifact-bucket-x1n1l5ev"
   }
-  depends_on = [google_storage_bucket.artifact_bucket]
 }
 
 
