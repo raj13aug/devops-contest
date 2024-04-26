@@ -12,6 +12,20 @@ resource "tls_private_key" "ssh" {
   algorithm = "RSA"
 }
 
+resource "google_compute_address" "external-static-ip" {
+  name   = "ip-${var.name}"
+  region = var.region
+}
+
+data "template_file" "client_userdata_script" {
+  template = file("${path.root}/start_script.tpl")
+  vars = {
+    bucket_name = "artifact-bucket-x1n1l5ev"
+  }
+  depends_on = [google_storage_bucket.artifact_bucket]
+}
+
+
 resource "google_compute_instance" "demo" {
   project = var.project_id
 
@@ -36,7 +50,7 @@ resource "google_compute_instance" "demo" {
   network_interface {
     network = "default"
     access_config {
-      // Ephemeral public IP
+      nat_ip = google_compute_address.external-static-ip.address
     }
   }
 
@@ -46,13 +60,9 @@ resource "google_compute_instance" "demo" {
   }
 
   # We can install any tools we need for the demo in the startup script
-  metadata_startup_script = <<EOT
-  set -xe \
-    && sudo apt update -y \
-    && sudo apt install postgresql-client jq iperf3 -y 
-EOT
+  metadata_startup_script = data.template_file.client_userdata_script.rendered
   resource_policies       = [google_compute_resource_policy.uptime_schedule.id]
-  depends_on              = [time_sleep.wait_30_seconds]
+  depends_on              = [time_sleep.wait_30_seconds, google_compute_address.external-static-ip]
 }
 
 
@@ -81,6 +91,30 @@ resource "google_compute_firewall" "demo-ssh-ipv4" {
   target_tags   = google_compute_instance.demo.tags
 }
 
+resource "google_compute_firewall" "demo-http-ipv4" {
+
+
+  name    = "staging-demo-ssh-ipv4"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = [80]
+  }
+
+  allow {
+    protocol = "udp"
+    ports    = [80]
+  }
+
+  allow {
+    protocol = "sctp"
+    ports    = [80]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = google_compute_instance.demo.tags
+}
 
 resource "local_file" "local_ssh_key" {
   content  = tls_private_key.ssh.private_key_pem
