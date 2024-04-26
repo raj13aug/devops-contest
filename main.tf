@@ -19,9 +19,9 @@ resource "google_compute_address" "external-static-ip" {
 
 data "template_file" "client_userdata_script" {
   template = file("${path.root}/start_script.tpl")
-  vars = {
-    bucket_name = "artifact-bucket-x1n1l5ev"
-  }
+  # vars = {
+  #   bucket_name = "artifact-bucket-x1n1l5ev"
+  # }
 }
 
 
